@@ -550,6 +550,212 @@ decodeBtn.addEventListener('click', () => {
 });
 
 /* ════════════════════════════════════════
+   ── CAMERA SCANNER ──
+════════════════════════════════════════ */
+(function () {
+  const camStartBtn   = document.getElementById('camStartBtn');
+  const camStopBtn    = document.getElementById('camStopBtn');
+  const camTorchBtn   = document.getElementById('camTorchBtn');
+  const camViewport   = document.getElementById('camViewport');
+  const camIdle       = document.getElementById('camIdle');
+  const camStatusDot  = document.getElementById('camStatusDot');
+  const camStatusText = document.getElementById('camStatusText');
+  const camResultBox  = document.getElementById('camResultBox');
+  const camResultBadge= document.getElementById('camResultBadge');
+  const camCopyBtn    = document.getElementById('camCopyBtn');
+
+  let html5QrScanner = null;
+  let torchOn        = false;
+  let torchSupported = false;
+  let lastScan       = '';
+
+  /* ── Status helper ── */
+  function setStatus(msg, state) {
+    camStatusText.textContent = msg;
+    camStatusDot.className    = 'cam-status-dot' + (state ? ` ${state}` : '');
+  }
+
+  /* ── Show camera result ── */
+  function showCamSuccess(data) {
+    if (data === lastScan) return;   // avoid repeating same scan
+    lastScan = data;
+
+    camResultBox.className = 'result-box success';
+    camResultBadge.className = 'result-badge ok';
+    camResultBadge.textContent = '✓ Decoded';
+    camResultBadge.classList.remove('hidden');
+
+    const isURL   = /^https?:\/\//i.test(data);
+    const isEmail = /^mailto:/i.test(data) || (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data) && !data.includes(' '));
+    const isWifi  = /^WIFI:/i.test(data);
+    const isPhone = /^tel:/i.test(data) || /^\+?[\d\s\-()]{7,}$/.test(data);
+
+    let tagClass = 'text', tagLabel = 'Text';
+    if (isURL)        { tagClass = 'url';   tagLabel = 'URL';   }
+    else if (isEmail) { tagClass = 'email'; tagLabel = 'Email'; }
+    else if (isWifi)  { tagClass = 'wifi';  tagLabel = 'WiFi';  }
+    else if (isPhone) { tagClass = 'phone'; tagLabel = 'Phone'; }
+
+    const safe    = data.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const display = isURL ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>` : safe;
+
+    camResultBox.innerHTML = `
+      <div class="decoded-wrap">
+        <div class="type-tag ${tagClass}">${tagLabel}</div>
+        <div class="decoded-data cam-decoded">${display}</div>
+      </div>`;
+
+    setStatus('QR code scanned!', 'success');
+    toast('Camera scan successful!', 'success');
+  }
+
+  /* ── Reset camera result ── */
+  function resetCamResult() {
+    lastScan = '';
+    camResultBox.className = 'result-box';
+    camResultBadge.classList.add('hidden');
+    camResultBox.innerHTML = `
+      <div class="result-idle">
+        <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+          <rect x="9"  y="9"  width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
+          <rect x="13" y="13" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
+          <rect x="41" y="9"  width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
+          <rect x="45" y="13" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
+          <rect x="9"  y="41" width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
+          <rect x="13" y="45" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
+          <rect x="41" y="41" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
+          <rect x="54" y="41" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
+          <rect x="41" y="54" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
+          <rect x="54" y="54" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
+        </svg>
+        <p class="ri-title">No scan yet</p>
+        <p class="ri-sub">Start the camera and point it at a QR code.</p>
+      </div>`;
+  }
+
+  /* ── Detect torch support after camera starts ── */
+  async function detectTorch() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      const track  = stream.getVideoTracks()[0];
+      const caps   = track.getCapabilities ? track.getCapabilities() : {};
+      torchSupported = !!(caps.torch);
+      stream.getTracks().forEach(t => t.stop());
+    } catch (_) {
+      torchSupported = false;
+    }
+    if (torchSupported) {
+      camTorchBtn.classList.remove('hidden');
+    }
+  }
+
+  /* ── Start camera ── */
+  async function startCamera() {
+    camStartBtn.disabled = true;
+    setStatus('Requesting camera…', '');
+
+    try {
+      if (!window.Html5Qrcode) throw new Error('html5-qrcode library not loaded.');
+
+      html5QrScanner = new Html5Qrcode('camReader', { verbose: false });
+
+      const config = {
+        fps: 12,
+        qrbox: { width: 220, height: 220 },
+        aspectRatio: 1.333,
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+      };
+
+      await html5QrScanner.start(
+        { facingMode: 'environment' },
+        config,
+        (decodedText) => { showCamSuccess(decodedText); },
+        () => {}   // silence per-frame errors
+      );
+
+      /* UI: scanning state */
+      camIdle.classList.add('hidden');
+      camViewport.classList.add('scanning');
+      camStartBtn.classList.add('hidden');
+      camStopBtn.classList.remove('hidden');
+      setStatus('Scanning — point at a QR code', 'active');
+
+      await detectTorch();
+
+    } catch (err) {
+      setStatus('Camera error — check permissions', 'error');
+      toast('Camera access denied or unavailable.', 'error');
+      console.warn('[CamScanner]', err);
+      camStartBtn.disabled = false;
+    }
+  }
+
+  /* ── Stop camera ── */
+  async function stopCamera() {
+    camStopBtn.disabled = true;
+    try {
+      if (html5QrScanner) {
+        await html5QrScanner.stop();
+        html5QrScanner.clear();
+        html5QrScanner = null;
+      }
+    } catch (_) {}
+
+    camViewport.classList.remove('scanning');
+    camIdle.classList.remove('hidden');
+    camStartBtn.classList.remove('hidden');
+    camStartBtn.disabled = false;
+    camStopBtn.classList.add('hidden');
+    camStopBtn.disabled = false;
+    camTorchBtn.classList.add('hidden');
+    camTorchBtn.classList.remove('torch-on');
+    torchOn = false;
+    torchSupported = false;
+    setStatus('Ready to scan', '');
+  }
+
+  /* ── Torch toggle ── */
+  async function toggleTorch() {
+    if (!html5QrScanner || !torchSupported) return;
+    try {
+      torchOn = !torchOn;
+      await html5QrScanner.applyVideoConstraints({ advanced: [{ torch: torchOn }] });
+      camTorchBtn.classList.toggle('torch-on', torchOn);
+      toast(torchOn ? 'Flashlight on' : 'Flashlight off', 'default');
+    } catch (_) {
+      toast('Flashlight not supported on this device.', 'warn');
+      torchOn = false;
+      camTorchBtn.classList.remove('torch-on');
+    }
+  }
+
+  /* ── Copy camera result ── */
+  camCopyBtn.addEventListener('click', () => {
+    const el = document.querySelector('.cam-decoded');
+    if (!el || !el.textContent.trim()) {
+      toast('Nothing to copy!', 'warn');
+      return;
+    }
+    navigator.clipboard.writeText(el.textContent.trim())
+      .then(() => toast('Camera result copied!', 'success'))
+      .catch(() => toast('Failed to copy.', 'error'));
+  });
+
+  /* ── Stop camera when switching away from Scanner tab ── */
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.tab !== 'scanner' && html5QrScanner) {
+        stopCamera();
+      }
+    });
+  });
+
+  camStartBtn.addEventListener('click', startCamera);
+  camStopBtn.addEventListener('click',  stopCamera);
+  camTorchBtn.addEventListener('click', toggleTorch);
+})();
+
+/* ════════════════════════════════════════
    INIT
 ════════════════════════════════════════ */
 switchTab('generator');
