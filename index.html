@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QR Toolkit Generator & Scanner</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <div class="brand-mark">
+        <div class="qr-icon">
+          <div class="qr-sq"></div><div class="qr-sq"></div>
+          <div class="qr-sq"></div><div class="qr-dot"></div>
+        </div>
+      </div>
+      <span class="brand-text">QR<span class="brand-accent">Toolkit</span></span>
+    </div>
+
+    <ul class="nav-list" id="navList">
+      <li><button class="nav-item active" data-tab="generator"><span class="nav-icon">⊞</span><span>Generator</span></button></li>
+      <li><button class="nav-item" data-tab="scanner"><span class="nav-icon">⊕</span><span>Scanner</span></button></li>
+      <li><button class="nav-item" data-tab="about"><span class="nav-icon">⊘</span><span>About</span></button></li>
+    </ul>
+
+    <div class="nav-actions">
+      <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">◐</button>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</nav>
+
+<main class="app-main">
+
+  <!-- ══════════════════════════════
+       GENERATOR
+  ══════════════════════════════ -->
+  <section class="tab-page active" id="tab-generator">
+    <div class="page-hero">
+      <div class="hero-label">01 Generator</div>
+      <h1 class="hero-title">Create Your <em>QR Code</em></h1>
+      <p class="hero-sub">Transform any text, URL, or data into a scannable QR code instantly.</p>
+    </div>
+    <div class="two-col">
+      <div class="panel">
+        <div class="field-group">
+          <label class="field-label">Content <span class="req">*</span></label>
+          <textarea class="field-input" id="genInput" maxlength="400" rows="1" placeholder="Enter URL, text, phone, email…"></textarea>
+          <div class="char-track"><div class="char-fill" id="charFill"></div></div>
+          <div class="char-row">
+            <span class="char-count" id="charCount">0 / 300 characters</span>
+            <span class="char-warn hidden" id="charWarn">Maximum character limit reached.</span>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Rename, appears above the QR Code in download <span class="opt">(Also write small description)</span></label>
+          <input type="text" class="field-input" id="genDesc" placeholder="e.g. Scan to visit our website (Optional)"/>
+        </div>
+
+        <div class="two-fields">
+          <div class="field-group">
+            <label class="field-label">QR Color</label>
+            <div class="color-wrap">
+              <input type="color" id="genQrColor" value="#1F2937"/>
+              <span class="color-hex" id="genQrHex">#1F2937</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Background</label>
+            <div class="color-wrap">
+              <input type="color" id="genBgColor" value="#FFFFFF"/>
+              <span class="color-hex" id="genBgHex">#FFFFFF</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">Size</label>
+          <div class="pill-row" id="genSizePills">
+            <button class="pill" data-size="180">Small</button>
+            <button class="pill active" data-size="260">Medium</button>
+            <button class="pill" data-size="360">Large</button>
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" id="genBtn"><span class="ripple"></span>Generate QR Code</button>
+          <button class="btn btn-ghost" id="genReset">↺ Reset</button>
+        </div>
+      </div>
+
+      <div class="panel preview-panel">
+        <div class="preview-bar">
+          <span class="preview-label">Preview</span>
+          <div class="traffic-lights"><span class="tl-r"></span><span class="tl-y"></span><span class="tl-g"></span></div>
+        </div>
+        <div class="qr-stage" id="genStage">
+          <div class="placeholder-wrap" id="genPlaceholder">
+            <div class="ph-grid">
+              <div class="ph-sq"></div><div class="ph-line"></div><div class="ph-sq"></div>
+              <div class="ph-line"></div><div class="ph-sq sm"></div><div class="ph-line"></div>
+              <div class="ph-sq"></div><div class="ph-line"></div><div class="ph-half"></div>
+            </div>
+            <p>Your QR will appear here</p>
+          </div>
+          <canvas id="genCanvas" style="display:none"></canvas>
+        </div>
+        <div class="dl-bar hidden" id="genDlBar" style="display: flex; justify-content: center; gap: 10px; align-items: center;">
+          <span class="dl-label">Export as PNG or JPG</span>
+          <button class="btn btn-dl" id="dlPng">PNG</button>
+          <button class="btn btn-dl" id="dlJpg">JPG</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════
+       SCANNER
+  ══════════════════════════════ -->
+  <section class="tab-page" id="tab-scanner">
+    <div class="page-hero">
+      <div class="hero-label">02 Scanner</div>
+      <h1 class="hero-title">Decode <em>QR Codes</em></h1>
+      <p class="hero-sub">Upload any image containing a QR code to extract its data instantly.</p>
+    </div>
+
+    <div class="scanner-grid">
+
+      <!-- Left: upload + image preview -->
+      <div class="panel scanner-left">
+        <div class="section-title">Upload Image</div>
+
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="scanFile" accept="image/*" hidden/>
+          <div class="dz-inner" id="dzInner">
+            <div class="dz-icon">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <rect x="6" y="6" width="15" height="15" rx="2.5" stroke="currentColor" stroke-width="2" fill="none"/>
+                <rect x="9.5" y="9.5" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/>
+                <rect x="27" y="6" width="15" height="15" rx="2.5" stroke="currentColor" stroke-width="2" fill="none"/>
+                <rect x="30.5" y="9.5" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/>
+                <rect x="6" y="27" width="15" height="15" rx="2.5" stroke="currentColor" stroke-width="2" fill="none"/>
+                <rect x="9.5" y="30.5" width="8" height="8" rx="1.5" fill="currentColor" opacity=".3"/>
+                <rect x="27" y="27" width="6" height="6" rx="1.5" fill="currentColor" opacity=".3"/>
+                <rect x="36" y="27" width="6" height="6" rx="1.5" fill="currentColor" opacity=".3"/>
+                <rect x="27" y="36" width="6" height="6" rx="1.5" fill="currentColor" opacity=".3"/>
+                <rect x="36" y="36" width="6" height="6" rx="1.5" fill="currentColor" opacity=".3"/>
+              </svg>
+            </div>
+            <p class="dz-text">Drop QR image here or <button class="dz-browse" id="dzBrowse" type="button">browse files</button></p>
+            <p class="dz-hint">PNG, JPG, JPEG, GIF, WebP, BMP</p>
+          </div>
+        </div>
+
+        <!-- Image preview (hidden until file loaded) -->
+        <div class="scan-img-preview hidden" id="scanImgPreview">
+          <div class="sip-img-wrap">
+            <img id="scanPreviewImg" src="" alt="Uploaded QR image"/>
+            <button class="sip-remove" id="scanRemove" title="Remove">✕</button>
+          </div>
+          <div class="sip-meta" id="scanMeta"></div>
+        </div>
+
+        <!-- Decode button (hidden until file loaded) -->
+        <button class="btn btn-primary decode-btn hidden" id="decodeBtn">
+          <span class="ripple"></span>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style="flex-shrink:0">
+            <circle cx="6.5" cy="6.5" r="4.5" stroke="white" stroke-width="1.8" fill="none"/>
+            <path d="M10 10l3.5 3.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          Decode QR Code
+        </button>
+      </div>
+
+      <!-- Right: result -->
+      <div class="panel scanner-right">
+        <div class="result-top">
+          <div class="section-title">Decoded Result</div>
+          <div class="result-badge hidden" id="resultBadge"></div>
+        </div>
+
+        <div class="result-box" id="resultBox">
+          <div class="result-idle">
+            <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+              <rect x="9" y="9" width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
+              <rect x="13" y="13" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="41" y="9" width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
+              <rect x="45" y="13" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="9" y="41" width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
+              <rect x="13" y="45" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="41" y="41" width="9" height="9" rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="54" y="41" width="9" height="9" rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="41" y="54" width="9" height="9" rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="54" y="54" width="9" height="9" rx="2" fill="var(--border)" opacity=".6"/>
+            </svg>
+            <p class="ri-title">Awaiting QR image</p>
+            <p class="ri-sub">Upload an image and click Decode, works with URLs, text, WiFi, email, phone numbers, and more.</p>
+          </div>
+        </div>
+        <button id="copyBtn" class="btn btn-ghost">Copy the Decoded Text</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════
+       ABOUT
+  ══════════════════════════════ -->
+  <section class="tab-page" id="tab-about">
+    <div class="page-hero">
+      <div class="hero-label">03 About</div>
+      <h1 class="hero-title">About <em>QR Toolkit</em></h1>
+      <p class="hero-sub">Everything you need to know about this application.</p>
+    </div>
+
+    <div class="about-grid">
+      <div class="panel">
+        <div class="about-heading"><span class="about-num">01</span><h3>How to Use</h3></div>
+
+        <div class="how-block">
+          <div class="how-tag">Generating a QR Code</div>
+          <ol class="steps">
+            <li><span class="sn">1</span>Go to the <strong>Generator</strong> tab</li>
+            <li><span class="sn">2</span>Enter your text, URL, or any data</li>
+            <li><span class="sn">3</span>Customize color, background, and size</li>
+            <li><span class="sn">4</span>Add an optional description (appears in download)</li>
+            <li><span class="sn">5</span>Click <strong>Generate QR Code</strong></li>
+            <li><span class="sn">6</span>Download as PNG or JPG</li>
+          </ol>
+        </div>
+        <div class="how-block">
+          <div class="how-tag">Scanning / Decoding</div>
+          <ol class="steps">
+            <li><span class="sn">1</span>Go to the <strong>Scanner</strong> tab</li>
+            <li><span class="sn">2</span>Upload or drag-and-drop a QR code image</li>
+            <li><span class="sn">3</span>Click <strong>Decode QR Code</strong></li>
+            <li><span class="sn">4</span>The decoded data appears in the result box</li>
+            <li><span class="sn">5</span>Non-QR images show an error message</li>
+          </ol> <BR></BR>
+                </div>
+                <div class="tech-row">
+                  <div class="tech-lbl">Built with</div>
+                  <div class="chips">
+                    <span class="chip">HTML5</span><span class="chip">CSS3</span>
+                    <span class="chip">JavaScript</span><span class="chip">qrcode.js</span><span class="chip">jsQR</span>
+                  </div>
+                </div>                
+      </div>
+
+      <div class="panel">
+        <div class="about-heading"><span class="about-num">02</span><h3>Developer Info</h3></div>
+        <div class="dev-hero">
+          <div class="dev-av"><span>AM</span><div class="av-ring"></div></div>
+          <div>
+            <div class="dev-name">Awais Ahmad</div>
+            <div class="dev-sub">Computer Science Undergraduate</div>
+          </div>
+        </div>
+
+        <div class="info-rows">
+          <div class="info-row"><span class="ir-icon"></span><div><div class="ir-lbl">WhatsApp</div><div class="ir-val">0315-1541429</div></div></div>
+          <div class="info-row"><span class="ir-icon"></span><div><div class="ir-lbl">Education</div><div class="ir-val">Undergraduate Student</div></div></div>
+          <div class="info-row"><span class="ir-icon"></span><div><div class="ir-lbl">University</div><div class="ir-val">Abdul Wali Khan University Mardan (AWKUM)</div></div></div>
+          <div class="info-row"><span class="ir-icon"></span><div><div class="ir-lbl">Program</div><div class="ir-val">Computer Science</div></div></div>
+          <div class="info-row"><span class="ir-icon"></span><div><div class="ir-lbl">Project Number</div><div class="ir-val">Five</div></div></div>
+          <div class="info-row"><span class="ir-icon"></span><div><div class="ir-lbl">Development Date</div><div class="ir-val">15 March 2026</div></div></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Off-screen canvas for QR scanning — MUST be outside any hidden section -->
+<canvas id="scanCanvas" style="position:fixed;left:-9999px;top:-9999px;visibility:hidden;pointer-events:none"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+<script src="script.js"></script>
+</body>
+</html>
