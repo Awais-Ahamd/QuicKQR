@@ -506,6 +506,113 @@ input[type=color]{width:28px;height:24px;border:none;border-radius:4px;padding:0
 }
 .chip:hover{background:var(--primary);color:#fff;transform:translateY(-2px)}
 
+/* ── CAMERA SCANNER ──────────────────────── */
+.cam-section{margin-top:2rem}
+
+.cam-section-header{margin-bottom:1.2rem}
+.cam-divider-label{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:.72rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.8px;color:var(--primary);
+  background:var(--primary-pale);
+  padding:5px 12px;border-radius:99px;
+  border:1px solid rgba(37,99,235,.18);
+}
+.cam-divider-icon{display:flex;align-items:center}
+
+/* Viewport */
+.cam-viewport{
+  position:relative;
+  width:100%;
+  min-height:240px;
+  background:#0a0a0a;
+  border-radius:var(--r-sm);
+  overflow:hidden;
+  border:1.5px solid var(--border);
+  margin-bottom:.9rem;
+}
+#camReader{width:100%!important}
+#camReader video{width:100%!important;height:auto!important;display:block;border-radius:0}
+#camReader>div{border-radius:0!important}
+
+/* Hide html5-qrcode default UI chrome */
+#camReader img[alt="Info icon"]{display:none!important}
+#camReader select,
+#camReader button:not(.cam-btn){display:none!important}
+#camReader span[style*="color: rgb(255, 168, 0)"]{display:none!important}
+
+/* Idle overlay */
+.cam-idle{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:10px;color:rgba(255,255,255,.45);
+  background:#0a0a0a;
+  transition:opacity .3s;
+  pointer-events:none;
+  z-index:2;
+}
+.cam-idle.hidden{opacity:0}
+.cam-idle-title{font-size:.9rem;font-weight:600;color:rgba(255,255,255,.6)}
+.cam-idle-sub{font-size:.76rem;color:rgba(255,255,255,.35);text-align:center;max-width:200px;line-height:1.45}
+.cam-idle-sub strong{color:rgba(255,255,255,.55)}
+
+/* Scan corner guides */
+.cam-guide{
+  position:absolute;width:22px;height:22px;
+  border-color:var(--primary);border-style:solid;
+  z-index:3;pointer-events:none;opacity:0;
+  transition:opacity .3s;
+}
+.cam-viewport.scanning .cam-guide{opacity:1}
+.cam-guide.tl{top:10px;left:10px;border-width:3px 0 0 3px;border-radius:3px 0 0 3px}
+.cam-guide.tr{top:10px;right:10px;border-width:3px 3px 0 0;border-radius:0 3px 0 0}
+.cam-guide.bl{bottom:10px;left:10px;border-width:0 0 3px 3px;border-radius:0 0 0 3px}
+.cam-guide.br{bottom:10px;right:10px;border-width:0 3px 3px 0;border-radius:0 0 3px 0}
+
+/* Scan line animation */
+.cam-viewport.scanning::after{
+  content:'';
+  position:absolute;left:10px;right:10px;height:2px;
+  background:linear-gradient(90deg,transparent,var(--primary),transparent);
+  border-radius:2px;
+  animation:camScan 2.2s ease-in-out infinite;
+  z-index:4;pointer-events:none;
+  top:10px;
+}
+@keyframes camScan{
+  0%  {top:10px;  opacity:0}
+  10% {opacity:1}
+  90% {opacity:1}
+  100%{top:calc(100% - 12px);opacity:0}
+}
+
+/* Controls */
+.cam-controls{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.65rem}
+.cam-btn{display:inline-flex;align-items:center;gap:6px;flex:1;justify-content:center;min-width:110px}
+
+/* Status */
+.cam-status{
+  display:flex;align-items:center;gap:7px;
+  font-size:.76rem;color:var(--text-3);padding:5px 0 2px;
+}
+.cam-status-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--border);flex-shrink:0;
+  transition:background .3s;
+}
+.cam-status-dot.active{background:var(--success);box-shadow:0 0 0 3px rgba(16,185,129,.2);animation:dotPulse 1.8s ease-in-out infinite}
+.cam-status-dot.success{background:var(--success)}
+.cam-status-dot.error{background:var(--error)}
+@keyframes dotPulse{0%,100%{box-shadow:0 0 0 3px rgba(16,185,129,.2)}50%{box-shadow:0 0 0 6px rgba(16,185,129,.05)}}
+
+/* Torch button active state */
+#camTorchBtn.torch-on{
+  background:var(--warn-pale);
+  color:var(--warn);
+  border-color:var(--warn);
+}
+
 /* ── TOAST ───────────────────────────────── */
 .toast-wrap{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:7px;z-index:9999}
 .toast{
