@@ -827,6 +827,8 @@ input[type=color]{width:28px;height:24px;border:none;border-radius:4px;padding:0
   .nav-list li:has([data-tab="scanner"]){display:none}
   /* Hide Home from dropdown — reachable via nav bar */
   .nav-list li:has([data-tab="home"]){display:none}
+  /* Hide Camera from dropdown — pinned as the Scan button in top bar */
+  .nav-list li:has([data-tab="camera"]){display:none}
 
   .nav-list.open{
     display:flex;position:fixed;
