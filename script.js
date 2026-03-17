@@ -739,7 +739,7 @@ decodeBtn.addEventListener('click', () => {
       await detectTorch();
 
     } catch (err) {
-      setStatus('Camera error! Please check permissions', 'error');
+      setStatus('Camera error — check permissions', 'error');
       toast('Camera access denied or unavailable.', 'error');
       console.warn('[CamScanner]', err);
       camStartBtn.disabled = false;
@@ -815,14 +815,31 @@ decodeBtn.addEventListener('click', () => {
    HOME CARD NAVIGATION
 ════════════════════════════════════════ */
 document.querySelectorAll('.home-card').forEach(card => {
-  card.addEventListener('click', () => {
+  function activateCard() {
     switchTab(card.dataset.tab);
-    // scroll to top of the page so the section is visible
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Instant scroll to top — smooth scroll is unreliable on iOS Safari
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }
+
+  // touchstart fires immediately on mobile (no 300ms tap delay)
+  card.addEventListener('touchstart', function(e) {
+    e.stopPropagation();
+    activateCard();
+  }, { passive: true });
+
+  // click handles desktop and acts as fallback on mobile
+  card.addEventListener('click', function(e) {
+    e.stopPropagation();
+    activateCard();
   });
 });
 
 /* ════════════════════════════════════════
-   INIT
+   INIT — always open home page
 ════════════════════════════════════════ */
+// Strip any active class from all tab-pages first (safety), then show home
+tabPages.forEach(p => p.classList.remove('active'));
+navItems.forEach(n => n.classList.remove('active'));
 switchTab('home');
