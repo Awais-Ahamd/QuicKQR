@@ -80,7 +80,7 @@ function switchTab(name) {
   navList.classList.remove('open');
   // keep mobile pin button active state in sync
   if (mobScannerPin) {
-    mobScannerPin.classList.toggle('active', name === 'scanner');
+    mobScannerPin.classList.toggle('active', name === 'camera');
   }
   // keep home button active state in sync
   if (navHomeBtn) {
@@ -797,10 +797,10 @@ decodeBtn.addEventListener('click', () => {
       .catch(() => toast('Failed to copy.', 'error'));
   });
 
-  /* ── Stop camera when switching away from Scanner tab ── */
+  /* ── Stop camera when switching away from Camera tab ── */
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (btn.dataset.tab !== 'scanner' && html5QrScanner) {
+      if (btn.dataset.tab !== 'camera' && html5QrScanner) {
         stopCamera();
       }
     });
@@ -816,11 +816,19 @@ decodeBtn.addEventListener('click', () => {
 ════════════════════════════════════════ */
 document.querySelectorAll('.home-card').forEach(card => {
   function activateCard() {
-    switchTab(card.dataset.tab);
+    const tab = card.dataset.tab;
+    switchTab(tab);
     // Instant scroll to top — smooth scroll is unreliable on iOS Safari
     window.scrollTo(0, 0);
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
+    // Auto-start camera when opening camera tab from home card
+    if (tab === 'camera') {
+      setTimeout(() => {
+        const btn = document.getElementById('camStartBtn');
+        if (btn && !btn.classList.contains('hidden')) btn.click();
+      }, 300);
+    }
   }
 
   // touchstart fires immediately on mobile (no 300ms tap delay)
