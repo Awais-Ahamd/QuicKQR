@@ -25,6 +25,7 @@
       <li><button class="nav-item active" data-tab="home"><span class="nav-icon">⌂</span><span>Home</span></button></li>
       <li><button class="nav-item" data-tab="generator"><span class="nav-icon">⊞</span><span>Generator</span></button></li>
       <li><button class="nav-item" data-tab="scanner"><span class="nav-icon">⊕</span><span>Scanner</span></button></li>
+      <li><button class="nav-item" data-tab="camera"><span class="nav-icon">⊙</span><span>Camera</span></button></li>
       <li><button class="nav-item" data-tab="about"><span class="nav-icon">⊘</span><span>About</span></button></li>
     </ul>
 
@@ -37,7 +38,7 @@
       </button>
       <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">◐</button>
       <!-- visible only on mobile, always in top bar -->
-      <button class="nav-item mob-scanner-pin" data-tab="scanner" id="mobScannerPin">
+      <button class="nav-item mob-scanner-pin" data-tab="camera" id="mobScannerPin">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style="flex-shrink:0">
           <rect x="1" y="1" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.4" fill="none"/>
           <rect x="8.5" y="1" width="5.5" height="5.5" rx="1" stroke="currentColor" stroke-width="1.4" fill="none"/>
@@ -102,12 +103,12 @@
         </div>
         <div class="hc-body">
           <div class="hc-title">Scan Uploaded Image</div>
-          <div class="hc-desc">Upload any image file containing a QR code. The decoded result appears instantly, supports URLs, WiFi, email, phone, and more.</div>
+          <div class="hc-desc">Upload any image file containing a QR code. The decoded result appears instantly — supports URLs, WiFi, email, phone, and more.</div>
         </div>
         <div class="hc-arrow">→</div>
       </button>
 
-      <button class="home-card" data-tab="scanner" data-subtab="camera">
+      <button class="home-card" data-tab="camera">
         <div class="hc-icon">
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
             <rect x="2" y="7" width="28" height="20" rx="3" stroke="currentColor" stroke-width="2" fill="none"/>
@@ -312,97 +313,91 @@
       </div>
     </div>
 
-    <!-- ══════════════════════
-         CAMERA SCANNER
-    ══════════════════════ -->
-    <div class="cam-section">
-      <div class="cam-section-header">
-        <div class="cam-divider-label">
-          <span class="cam-divider-icon">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="3" fill="currentColor"/>
-              <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3" fill="none"/>
-              <path d="M8 1v2M8 13v2M1 8h2M13 8h2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+  </section>
+
+  <!-- ══════════════════════════════
+       CAMERA SCANNER
+  ══════════════════════════════ -->
+  <section class="tab-page" id="tab-camera">
+    <div class="page-hero">
+      <div class="hero-label">03 Camera</div>
+      <h1 class="hero-title">Scan with <em>Camera</em></h1>
+      <p class="hero-sub">Use your device camera to scan any QR code in real time.</p>
+    </div>
+
+    <div class="scanner-grid">
+      <!-- Camera preview panel -->
+      <div class="panel cam-left">
+        <div class="section-title">Camera Preview</div>
+
+        <div class="cam-viewport" id="camViewport">
+          <div id="camReader"></div>
+          <div class="cam-idle" id="camIdle">
+            <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+              <rect x="4" y="10" width="48" height="36" rx="5" stroke="currentColor" stroke-width="2" fill="none"/>
+              <circle cx="28" cy="28" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+              <circle cx="28" cy="28" r="4" fill="currentColor" opacity=".35"/>
+              <rect x="20" y="4" width="16" height="7" rx="2.5" stroke="currentColor" stroke-width="2" fill="none"/>
+              <circle cx="45" cy="16" r="2.5" fill="currentColor" opacity=".4"/>
             </svg>
-          </span>
-          <span>Live Camera Scanner</span>
+            <p class="cam-idle-title">Camera not active</p>
+            <p class="cam-idle-sub">Press <strong>Start Scan</strong> to activate your camera.</p>
+          </div>
+          <div class="cam-guide tl"></div>
+          <div class="cam-guide tr"></div>
+          <div class="cam-guide bl"></div>
+          <div class="cam-guide br"></div>
+          <div class="cam-scan-line"></div>
+        </div>
+
+        <div class="cam-controls">
+          <button class="btn btn-primary cam-btn" id="camStartBtn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><polygon points="3,1 13,7 3,13" fill="white"/></svg>
+            Start Scan
+          </button>
+          <button class="btn btn-ghost cam-btn hidden" id="camStopBtn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><rect x="2" y="2" width="4" height="10" rx="1" fill="currentColor"/><rect x="8" y="2" width="4" height="10" rx="1" fill="currentColor"/></svg>
+            Stop Scan
+          </button>
+          <button class="btn btn-ghost cam-btn hidden" id="camTorchBtn" title="Toggle flashlight">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.42 1.42M11.53 11.53l1.42 1.42M3.05 12.95l1.42-1.42M11.53 4.47l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+            Flashlight
+          </button>
+        </div>
+
+        <div class="cam-status" id="camStatus">
+          <span class="cam-status-dot" id="camStatusDot"></span>
+          <span id="camStatusText">Ready to scan</span>
         </div>
       </div>
 
-      <div class="scanner-grid">
-        <!-- Camera preview panel -->
-        <div class="panel cam-left">
-          <div class="section-title">Camera Preview</div>
+      <!-- Camera result panel -->
+      <div class="panel cam-right">
+        <div class="result-top">
+          <div class="section-title">Camera Result</div>
+          <div class="result-badge hidden" id="camResultBadge"></div>
+        </div>
 
-          <div class="cam-viewport" id="camViewport">
-            <div id="camReader"></div>
-            <div class="cam-idle" id="camIdle">
-              <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-                <rect x="4" y="10" width="48" height="36" rx="5" stroke="currentColor" stroke-width="2" fill="none"/>
-                <circle cx="28" cy="28" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
-                <circle cx="28" cy="28" r="4" fill="currentColor" opacity=".35"/>
-                <rect x="20" y="4" width="16" height="7" rx="2.5" stroke="currentColor" stroke-width="2" fill="none"/>
-                <circle cx="45" cy="16" r="2.5" fill="currentColor" opacity=".4"/>
-              </svg>
-              <p class="cam-idle-title">Camera not active</p>
-              <p class="cam-idle-sub">Press <strong>Start Scan</strong> to activate your camera.</p>
-            </div>
-            <div class="cam-guide tl"></div>
-            <div class="cam-guide tr"></div>
-            <div class="cam-guide bl"></div>
-            <div class="cam-guide br"></div>
-            <div class="cam-scan-line"></div>
-          </div>
-
-          <div class="cam-controls">
-            <button class="btn btn-primary cam-btn" id="camStartBtn">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><polygon points="3,1 13,7 3,13" fill="white"/></svg>
-              Start Scan
-            </button>
-            <button class="btn btn-ghost cam-btn hidden" id="camStopBtn">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0"><rect x="2" y="2" width="4" height="10" rx="1" fill="currentColor"/><rect x="8" y="2" width="4" height="10" rx="1" fill="currentColor"/></svg>
-              Stop Scan
-            </button>
-            <button class="btn btn-ghost cam-btn hidden" id="camTorchBtn" title="Toggle flashlight">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0"><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.42 1.42M11.53 11.53l1.42 1.42M3.05 12.95l1.42-1.42M11.53 4.47l1.42-1.42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
-              Flashlight
-            </button>
-          </div>
-
-          <div class="cam-status" id="camStatus">
-            <span class="cam-status-dot" id="camStatusDot"></span>
-            <span id="camStatusText">Ready to scan</span>
+        <div class="result-box" id="camResultBox">
+          <div class="result-idle">
+            <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+              <rect x="9"  y="9"  width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
+              <rect x="13" y="13" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="41" y="9"  width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
+              <rect x="45" y="13" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="9"  y="41" width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
+              <rect x="13" y="45" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="41" y="41" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="54" y="41" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="41" y="54" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
+              <rect x="54" y="54" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
+            </svg>
+            <p class="ri-title">No scan yet</p>
+            <p class="ri-sub">Start the camera and point it at a QR code.</p>
           </div>
         </div>
 
-        <!-- Camera result panel -->
-        <div class="panel cam-right">
-          <div class="result-top">
-            <div class="section-title">Camera Result</div>
-            <div class="result-badge hidden" id="camResultBadge"></div>
-          </div>
-
-          <div class="result-box" id="camResultBox">
-            <div class="result-idle">
-              <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-                <rect x="9"  y="9"  width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
-                <rect x="13" y="13" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
-                <rect x="41" y="9"  width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
-                <rect x="45" y="13" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
-                <rect x="9"  y="41" width="22" height="22" rx="3" stroke="var(--border-2)" stroke-width="2" fill="none"/>
-                <rect x="13" y="45" width="14" height="14" rx="2" fill="var(--border)" opacity=".6"/>
-                <rect x="41" y="41" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
-                <rect x="54" y="41" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
-                <rect x="41" y="54" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
-                <rect x="54" y="54" width="9"  height="9"  rx="2" fill="var(--border)" opacity=".6"/>
-              </svg>
-              <p class="ri-title">No scan yet</p>
-              <p class="ri-sub">Start the camera and point it at a QR code.</p>
-            </div>
-          </div>
-
-          <button id="camCopyBtn" class="btn btn-ghost" style="margin-top:.75rem">Copy Camera Result</button>
-        </div>
+        <button id="camCopyBtn" class="btn btn-ghost" style="margin-top:.75rem">Copy Camera Result</button>
       </div>
     </div>
 
@@ -422,33 +417,33 @@
       <!-- What is QRToolkit description panel -->
       <div class="panel about-desc-panel">
         <div class="about-heading"><span class="about-num">00</span><h3>What is QRToolkit?</h3></div>
-        <p class="about-desc-text">QRToolkit is a free, browser-based tool that lets you <strong>create</strong> and <strong>decode</strong> QR codes instantly, no app installs, no sign-up required. Everything runs locally in your browser for fast, private use.</p>
+        <p class="about-desc-text">QRToolkit is a free, browser-based tool that lets you <strong>create</strong> and <strong>decode</strong> QR codes instantly — no app installs, no sign-up required. Everything runs locally in your browser for fast, private use.</p>
 
         <div class="about-uses-label">Example Uses</div>
         <ul class="about-uses-list">
           <li>
             <span class="au-dot"></span>
-            <div><strong>Share website links</strong>, convert any URL into a scannable code for posters, cards, or screens</div>
+            <div><strong>Share website links</strong> — convert any URL into a scannable code for posters, cards, or screens</div>
           </li>
           <li>
             <span class="au-dot"></span>
-            <div><strong>WiFi credentials</strong>, let guests connect to your network instantly by scanning</div>
+            <div><strong>WiFi credentials</strong> — let guests connect to your network instantly by scanning</div>
           </li>
           <li>
             <span class="au-dot"></span>
-            <div><strong>Contact info &amp; business cards</strong>, encode your name, phone, and email as a digital vCard</div>
+            <div><strong>Contact info &amp; business cards</strong> — encode your name, phone, and email as a digital vCard</div>
           </li>
           <li>
             <span class="au-dot"></span>
-            <div><strong>Event tickets &amp; check-ins</strong>, generate unique codes for attendee verification</div>
+            <div><strong>Event tickets &amp; check-ins</strong> — generate unique codes for attendee verification</div>
           </li>
           <li>
             <span class="au-dot"></span>
-            <div><strong>Product information</strong>, link a QR to product pages, manuals, or videos</div>
+            <div><strong>Product information</strong> — link a QR to product pages, manuals, or videos</div>
           </li>
           <li>
             <span class="au-dot"></span>
-            <div><strong>Social media &amp; documents</strong>, share profiles, Google Docs, or Drive folders with a single scan</div>
+            <div><strong>Social media &amp; documents</strong> — share profiles, Google Docs, or Drive folders with a single scan</div>
           </li>
         </ul>
       </div>
