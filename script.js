@@ -13,12 +13,55 @@ const themeBtn = document.getElementById('themeToggle');
 
 if (localStorage.getItem('qr-theme') === 'dark') {
   html.setAttribute('data-theme', 'dark');
+  // Pre-set color pickers to dark-mode defaults on load
+  document.addEventListener('DOMContentLoaded', () => {
+    const qrEl = document.getElementById('genQrColor');
+    const bgEl = document.getElementById('genBgColor');
+    if (qrEl && bgEl) {
+      qrEl.value = '#FFFFFF';
+      bgEl.value = '#1F2937';
+      const qrHex = document.getElementById('genQrHex');
+      const bgHex = document.getElementById('genBgHex');
+      if (qrHex) qrHex.textContent = '#FFFFFF';
+      if (bgHex) bgHex.textContent = '#1F2937';
+    }
+  });
 }
 
 themeBtn.addEventListener('click', () => {
   const dark = html.getAttribute('data-theme') === 'dark';
   html.setAttribute('data-theme', dark ? 'light' : 'dark');
   localStorage.setItem('qr-theme', dark ? 'light' : 'dark');
+
+  // Swap QR color pickers when switching theme
+  // (only if the user has not manually customised away from defaults)
+  const defaultDark  = '#1F2937';
+  const defaultLight = '#FFFFFF';
+  const qrEl = document.getElementById('genQrColor');
+  const bgEl = document.getElementById('genBgColor');
+  if (!qrEl || !bgEl) return;
+
+  const currentQr = qrEl.value.toUpperCase();
+  const currentBg = bgEl.value.toUpperCase();
+
+  // going light→dark: if colours are still the light-mode defaults, swap them
+  if (!dark) {  // was light, now going dark
+    if (currentQr === defaultDark.toUpperCase() && currentBg === defaultLight.toUpperCase()) {
+      qrEl.value = defaultLight;
+      bgEl.value = defaultDark;
+      document.getElementById('genQrHex').textContent = defaultLight;
+      document.getElementById('genBgHex').textContent = defaultDark.toUpperCase();
+      if (typeof genMade !== 'undefined' && genMade) doGen();
+    }
+  } else {      // was dark, now going light
+    if (currentQr === defaultLight.toUpperCase() && currentBg === defaultDark.toUpperCase()) {
+      qrEl.value = defaultDark;
+      bgEl.value = defaultLight;
+      document.getElementById('genQrHex').textContent = defaultDark.toUpperCase();
+      document.getElementById('genBgHex').textContent = defaultLight;
+      if (typeof genMade !== 'undefined' && genMade) doGen();
+    }
+  }
 });
 
 /* ════════════════════════════════════════
@@ -28,11 +71,21 @@ const navItems  = document.querySelectorAll('.nav-item');
 const tabPages  = document.querySelectorAll('.tab-page');
 const hamburger = document.getElementById('hamburger');
 const navList   = document.getElementById('navList');
+const mobScannerPin = document.getElementById('mobScannerPin');
+const navHomeBtn    = document.getElementById('navHomeBtn');
 
 function switchTab(name) {
   navItems.forEach(n => n.classList.toggle('active', n.dataset.tab === name));
   tabPages.forEach(p => p.classList.toggle('active', p.id === `tab-${name}`));
   navList.classList.remove('open');
+  // keep mobile pin button active state in sync
+  if (mobScannerPin) {
+    mobScannerPin.classList.toggle('active', name === 'scanner');
+  }
+  // keep home button active state in sync
+  if (navHomeBtn) {
+    navHomeBtn.classList.toggle('active', name === 'home');
+  }
 }
 
 navItems.forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
@@ -607,6 +660,9 @@ decodeBtn.addEventListener('click', () => {
 
     setStatus('QR code scanned!', 'success');
     toast('Camera scan successful!', 'success');
+
+    // Auto-stop the camera after a successful scan
+    setTimeout(() => stopCamera(), 800);
   }
 
   /* ── Reset camera result ── */
@@ -683,7 +739,7 @@ decodeBtn.addEventListener('click', () => {
       await detectTorch();
 
     } catch (err) {
-      setStatus('Camera error — check permissions', 'error');
+      setStatus('Camera error! Please check permissions', 'error');
       toast('Camera access denied or unavailable.', 'error');
       console.warn('[CamScanner]', err);
       camStartBtn.disabled = false;
@@ -756,6 +812,17 @@ decodeBtn.addEventListener('click', () => {
 })();
 
 /* ════════════════════════════════════════
+   HOME CARD NAVIGATION
+════════════════════════════════════════ */
+document.querySelectorAll('.home-card').forEach(card => {
+  card.addEventListener('click', () => {
+    switchTab(card.dataset.tab);
+    // scroll to top of the page so the section is visible
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+
+/* ════════════════════════════════════════
    INIT
 ════════════════════════════════════════ */
-switchTab('generator');
+switchTab('home');
