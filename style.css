@@ -701,6 +701,8 @@ input[type=color]{width:28px;height:24px;border:none;border-radius:4px;padding:0
   cursor:pointer;text-align:left;font-family:var(--font);
   transition:border-color var(--t),box-shadow var(--t),transform var(--t),background var(--t);
   outline:none;width:100%;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:rgba(37,99,235,.12);
 }
 .home-card:hover{
   border-color:var(--primary);
