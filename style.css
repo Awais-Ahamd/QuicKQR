@@ -687,6 +687,84 @@ input[type=color]{width:28px;height:24px;border:none;border-radius:4px;padding:0
   .cam-section-header .cam-divider-label{font-size:.65rem;padding:4px 10px}
 }
 
+/* ── HOME CARDS ──────────────────────────── */
+.home-cards{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1.1rem;
+}
+.home-card{
+  display:flex;align-items:center;gap:1.1rem;
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--r);box-shadow:var(--shadow);
+  padding:1.4rem 1.3rem;
+  cursor:pointer;text-align:left;font-family:var(--font);
+  transition:border-color var(--t),box-shadow var(--t),transform var(--t),background var(--t);
+  outline:none;width:100%;
+}
+.home-card:hover{
+  border-color:var(--primary);
+  box-shadow:0 4px 20px rgba(37,99,235,.13);
+  transform:translateY(-3px);
+}
+.home-card:active{transform:scale(.98)}
+.hc-icon{
+  flex-shrink:0;
+  width:56px;height:56px;
+  background:var(--primary-pale);
+  border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--primary);
+  transition:background var(--t),color var(--t);
+}
+.home-card:hover .hc-icon{background:var(--primary);color:#fff}
+.hc-body{flex:1;min-width:0}
+.hc-title{
+  font-size:.97rem;font-weight:700;color:var(--text);
+  margin-bottom:.28rem;
+}
+.hc-desc{
+  font-size:.78rem;color:var(--text-3);line-height:1.55;
+}
+.hc-arrow{
+  flex-shrink:0;font-size:1.15rem;color:var(--text-4);
+  transition:transform var(--t),color var(--t);
+}
+.home-card:hover .hc-arrow{transform:translateX(4px);color:var(--primary)}
+
+@media(max-width:680px){
+  .home-cards{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .home-card{padding:1.1rem 1rem;gap:.85rem}
+  .hc-icon{width:48px;height:48px}
+  .hc-title{font-size:.9rem}
+  .hc-desc{font-size:.74rem}
+}
+
+/* ── ABOUT DESCRIPTION ───────────────────── */
+.about-desc-panel{grid-column:1 / -1}
+.about-desc-text{
+  font-size:.88rem;color:var(--text-2);line-height:1.7;
+  margin-bottom:1.2rem;
+}
+.about-uses-label{
+  font-size:.68rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.5px;color:var(--text-4);margin-bottom:.7rem;
+}
+.about-uses-list{
+  list-style:none;display:flex;flex-direction:column;gap:.6rem;
+}
+.about-uses-list li{
+  display:flex;align-items:flex-start;gap:.7rem;
+  font-size:.84rem;color:var(--text-2);line-height:1.55;
+}
+.au-dot{
+  flex-shrink:0;width:7px;height:7px;border-radius:50%;
+  background:var(--primary);margin-top:.45rem;opacity:.7;
+}
+.about-uses-list strong{color:var(--text);font-weight:600}
+
 /* ── TOAST ───────────────────────────────── */
 .toast-wrap{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:7px;z-index:9999}
 .toast{
@@ -706,6 +784,21 @@ input[type=color]{width:28px;height:24px;border:none;border-radius:4px;padding:0
 .hidden{display:none!important}
 
 /* ── RESPONSIVE ──────────────────────────── */
+
+/* Home button — always visible in top bar */
+.nav-home-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 11px;font-size:.78rem;font-weight:600;
+  color:rgba(255,255,255,.75);
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.07);
+  border-radius:7px;cursor:pointer;
+  white-space:nowrap;
+  transition:background var(--t),color var(--t),border-color var(--t);
+  font-family:var(--font);
+}
+.nav-home-btn:hover{background:rgba(255,255,255,.16);color:#fff}
+.nav-home-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 
 /* Mobile Scanner pin — hidden on desktop */
 .mob-scanner-pin{
@@ -730,6 +823,8 @@ input[type=color]{width:28px;height:24px;border:none;border-radius:4px;padding:0
 
   /* Hide Scanner from dropdown since it's pinned in top bar */
   .nav-list li:has([data-tab="scanner"]){display:none}
+  /* Hide Home from dropdown — reachable via nav bar */
+  .nav-list li:has([data-tab="home"]){display:none}
 
   .nav-list.open{
     display:flex;position:fixed;
@@ -757,4 +852,6 @@ input[type=color]{width:28px;height:24px;border:none;border-radius:4px;padding:0
   .brand-text{font-size:.95rem}
   .mob-scanner-pin span:last-child{display:none} /* icon-only on tiny screens */
   .mob-scanner-pin{padding:6px 8px}
+  .nav-home-btn span:last-child{display:none}    /* icon-only on tiny screens */
+  .nav-home-btn{padding:6px 8px}
 }
