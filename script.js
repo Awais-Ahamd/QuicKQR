@@ -242,25 +242,40 @@ function downloadWithDesc(canvas, fmt, name, desc, bg) {
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, out.width, out.height);
 
-  // Pick text colour with enough contrast against the background
-  // Parse background as RGB and compute relative luminance
-  function hexToRgb(hex) {
-    const h = hex.replace('#','');
-    const n = parseInt(h.length === 3
-      ? h.split('').map(c=>c+c).join('')
-      : h, 16);
-    return [(n>>16)&255,(n>>8)&255,n&255];
+  // Robust colour→luminance: handles #hex, #hhex, rgb(), rgba()
+  // Works on all browsers including Android WebView / Chrome on mobile
+  function colorToRgb(color) {
+    const s = (color || '').trim();
+    // rgb(r,g,b) or rgba(r,g,b,a)
+    const rgbMatch = s.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+    if (rgbMatch) return [+rgbMatch[1], +rgbMatch[2], +rgbMatch[3]];
+    // #rrggbb or #rgb
+    const hex = s.replace('#','');
+    if (hex.length === 3) {
+      return [
+        parseInt(hex[0]+hex[0],16),
+        parseInt(hex[1]+hex[1],16),
+        parseInt(hex[2]+hex[2],16)
+      ];
+    }
+    if (hex.length >= 6) {
+      return [
+        parseInt(hex.slice(0,2),16),
+        parseInt(hex.slice(2,4),16),
+        parseInt(hex.slice(4,6),16)
+      ];
+    }
+    return [255,255,255]; // fallback white
   }
   function luminance([r,g,b]) {
-    const s = [r,g,b].map(v => {
+    return [r,g,b].reduce((sum,v,i) => {
       v /= 255;
-      return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4);
-    });
-    return 0.2126*s[0]+0.7152*s[1]+0.0722*s[2];
+      const l = v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4);
+      return sum + l * [0.2126,0.7152,0.0722][i];
+    }, 0);
   }
-  const bgRgb = hexToRgb(bgColor);
-  const bgLum = luminance(bgRgb);
-  // Use white text on dark backgrounds, dark text on light backgrounds
+  const bgLum = luminance(colorToRgb(bgColor));
+  // White text on dark bg, dark text on light bg
   const textColor = bgLum < 0.35 ? '#FFFFFF' : '#1F2937';
 
   ctx.font = `bold ${fs}px system-ui,Arial,sans-serif`;
@@ -370,6 +385,9 @@ document.getElementById('dlPng').addEventListener('click', () => {
 });
 document.getElementById('dlJpg').addEventListener('click', () => {
   if (genMade) downloadWithDesc(genCanvas, 'jpg', 'qr-code', genDesc.value, genBgColor.value);
+});
+document.getElementById('dlPrint').addEventListener('click', () => {
+  printQR();
 });
 
 /* ════════════════════════════════════════
@@ -914,6 +932,144 @@ decodeBtn.addEventListener('click', () => {
   camStopBtn.addEventListener('click',  stopCamera);
   camTorchBtn.addEventListener('click', toggleTorch);
 })();
+
+/* ════════════════════════════════════════
+   PRINT QR CODE
+   Builds a full-resolution print canvas
+   (QR + optional title/description),
+   injects it into a hidden iframe with
+   @media print CSS, then calls print().
+   Works on desktop (print dialog) and
+   triggers system print/share on mobile.
+════════════════════════════════════════ */
+function printQR() {
+  if (!genMade) { toast('Generate a QR code first.', 'warn'); return; }
+
+  const desc   = (genDesc.value || '').trim();
+  const bgCol  = genBgColor.value || '#ffffff';
+  const margin = 40;
+  const titleH = desc ? 36 : 0;
+  const gap    = desc ? 18 : 0;
+  const qrW    = genCanvas.width;
+  const qrH    = genCanvas.height;
+
+  // Build a high-res print canvas
+  const pc = document.createElement('canvas');
+  pc.width  = qrW + margin * 2;
+  pc.height = qrH + margin * 2 + titleH + gap;
+  const ctx = pc.getContext('2d');
+
+  // Background
+  ctx.fillStyle = bgCol;
+  ctx.fillRect(0, 0, pc.width, pc.height);
+
+  // Description text (same contrast logic as download)
+  if (desc) {
+    function colorToRgb(color) {
+      const s = (color||'').trim();
+      const m = s.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+      if (m) return [+m[1],+m[2],+m[3]];
+      const h = s.replace('#','');
+      if (h.length===3) return [parseInt(h[0]+h[0],16),parseInt(h[1]+h[1],16),parseInt(h[2]+h[2],16)];
+      if (h.length>=6)  return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
+      return [255,255,255];
+    }
+    function lum([r,g,b]) {
+      return [r,g,b].reduce((s,v,i)=>{v/=255;return s+(v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4))*[0.2126,0.7152,0.0722][i];},0);
+    }
+    const textCol = lum(colorToRgb(bgCol)) < 0.35 ? '#FFFFFF' : '#1F2937';
+    ctx.fillStyle = textCol;
+    ctx.font = 'bold 22px system-ui,Arial,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(desc, pc.width / 2, margin + titleH / 2);
+  }
+
+  // QR code
+  ctx.drawImage(genCanvas, margin, margin + titleH + gap);
+
+  // Convert to data URL and open print iframe
+  const dataUrl = pc.toDataURL('image/png');
+
+  // Remove any previous print iframe
+  const old = document.getElementById('_qrPrintFrame');
+  if (old) old.remove();
+
+  const iframe = document.createElement('iframe');
+  iframe.id = '_qrPrintFrame';
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;border:none;opacity:0;';
+  document.body.appendChild(iframe);
+
+  const iDoc = iframe.contentWindow.document;
+  iDoc.open();
+  iDoc.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${desc || 'QR Code'}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;background:#fff}
+  body{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    padding:16px;
+    font-family:system-ui,Arial,sans-serif;
+  }
+  .print-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0;
+    page-break-inside:avoid;
+  }
+  .print-wrap img{
+    max-width:100%;
+    width:auto;
+    height:auto;
+    display:block;
+    image-rendering:crisp-edges;
+    image-rendering:-webkit-optimize-contrast;
+  }
+  @page{
+    size:A4;
+    margin:15mm;
+  }
+  @media print{
+    html,body{
+      width:210mm;
+      padding:0;
+      margin:0;
+    }
+    .print-wrap img{
+      max-width:160mm;
+      max-height:220mm;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="print-wrap">
+    <img src="${dataUrl}" alt="${desc || 'QR Code'}"/>
+  </div>
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.focus();
+        window.print();
+      }, 250);
+    };
+  <\/script>
+</body>
+</html>`);
+  iDoc.close();
+
+  toast('Opening print dialog…', 'default');
+}
 
 /* ════════════════════════════════════════
    HOME CARD NAVIGATION
