@@ -206,6 +206,9 @@ function showQRResult(stageId, canvasId, placeholderId, dlBarId) {
    DOWNLOAD HELPERS
 ════════════════════════════════════════ */
 function downloadCanvas(canvas, fmt, name, bg) {
+  // Add timestamp to filename so browser never sees a duplicate name
+  const ts = Date.now();
+  const uniqueName = `${name}-${ts}`;
   let url;
   if (fmt === 'jpg') {
     const tmp = document.createElement('canvas');
@@ -219,7 +222,7 @@ function downloadCanvas(canvas, fmt, name, bg) {
     url = canvas.toDataURL('image/png');
   }
   const a = document.createElement('a');
-  a.href = url; a.download = `${name}.${fmt}`; a.click();
+  a.href = url; a.download = `${uniqueName}.${fmt}`; a.click();
   toast(`Downloaded as ${fmt.toUpperCase()}`, 'success');
 }
 
@@ -233,15 +236,40 @@ function downloadWithDesc(canvas, fmt, name, desc, bg) {
   out.width  = canvas.width  + pad * 2;
   out.height = canvas.height + pad * 2 + fs + gap * 2;
   const ctx = out.getContext('2d');
-  ctx.fillStyle = bg || '#ffffff';
+
+  // Fill background
+  const bgColor = bg || '#ffffff';
+  ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, out.width, out.height);
+
+  // Pick text colour with enough contrast against the background
+  // Parse background as RGB and compute relative luminance
+  function hexToRgb(hex) {
+    const h = hex.replace('#','');
+    const n = parseInt(h.length === 3
+      ? h.split('').map(c=>c+c).join('')
+      : h, 16);
+    return [(n>>16)&255,(n>>8)&255,n&255];
+  }
+  function luminance([r,g,b]) {
+    const s = [r,g,b].map(v => {
+      v /= 255;
+      return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4);
+    });
+    return 0.2126*s[0]+0.7152*s[1]+0.0722*s[2];
+  }
+  const bgRgb = hexToRgb(bgColor);
+  const bgLum = luminance(bgRgb);
+  // Use white text on dark backgrounds, dark text on light backgrounds
+  const textColor = bgLum < 0.35 ? '#FFFFFF' : '#1F2937';
+
   ctx.font = `bold ${fs}px system-ui,Arial,sans-serif`;
-  ctx.fillStyle = '#1F2937';
+  ctx.fillStyle = textColor;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(desc.trim(), out.width / 2, gap + fs / 2);
   ctx.drawImage(canvas, pad, pad + fs + gap * 2);
-  downloadCanvas(out, fmt, name, bg);
+  downloadCanvas(out, fmt, name, bgColor);
 }
 
 /* ════════════════════════════════════════
@@ -454,15 +482,45 @@ function showSuccess(data) {
   else if (isWifi)  { tagClass = 'wifi';  tagLabel = 'WiFi';  }
   else if (isPhone) { tagClass = 'phone'; tagLabel = 'Phone'; }
 
-  const safe    = esc(data); 
+  const safe    = esc(data);
   const display = isURL
     ? `<a href="${esc(data)}" target="_blank" rel="noopener noreferrer">${safe}</a>`
     : safe;
+
+  // Build open-action button based on content type (same as camera scanner)
+  let openBtnHtml = '';
+  if (isURL) {
+    openBtnHtml = `<a class="btn btn-primary cam-open-btn" href="${esc(data)}" target="_blank" rel="noopener noreferrer">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
+        <path d="M6 2H2a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1V8" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M8 1h5m0 0v5m0-5L6.5 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Open Link
+    </a>`;
+  } else if (isEmail) {
+    const mailto = data.startsWith('mailto:') ? esc(data) : `mailto:${safe}`;
+    openBtnHtml = `<a class="btn btn-primary cam-open-btn" href="${mailto}">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
+        <rect x="1" y="3" width="12" height="9" rx="1.5" stroke="white" stroke-width="1.6" fill="none"/>
+        <path d="M1 4l6 4 6-4" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      Send Email
+    </a>`;
+  } else if (isPhone) {
+    const tel = data.startsWith('tel:') ? esc(data) : `tel:${safe.replace(/\s/g,'')}`;
+    openBtnHtml = `<a class="btn btn-primary cam-open-btn" href="${tel}">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
+        <path d="M2 2.5C2 1.7 2.7 1 3.5 1h1.1c.4 0 .7.3.8.6l.7 2.1c.1.3 0 .7-.3.9L4.7 5.4c.7 1.5 1.9 2.7 3.4 3.4l.8-1.1c.2-.3.6-.4.9-.3l2.1.7c.3.1.6.4.6.8v1.1c0 .8-.7 1.5-1.5 1.5-5 0-9-4-9-9z" stroke="white" stroke-width="1.4" fill="none"/>
+      </svg>
+      Call Number
+    </a>`;
+  }
 
   resultBox.innerHTML = `
     <div class="decoded-wrap">
       <div class="type-tag ${tagClass}">${tagLabel}</div>
       <div class="decoded-data">${display}</div>
+      ${openBtnHtml}
     </div>`;
   toast('QR code decoded!', 'success');
 }
@@ -508,8 +566,7 @@ function esc(s) {
 /* ── Core: draw image onto a fresh BODY-LEVEL canvas and run jsQR ──
    CRITICAL: canvas must be appended to document.body (NOT inside any
    hidden element) otherwise getImageData returns all-zero data.       */
-function tryDecode(img, targetW, targetH) {
-  // Create a fresh canvas, attach to body so it's in the render tree
+function tryDecode(img, targetW, targetH, preprocess) {
   const c = document.createElement('canvas');
   c.width  = targetW;
   c.height = targetH;
@@ -517,7 +574,18 @@ function tryDecode(img, targetW, targetH) {
   document.body.appendChild(c);
 
   const ctx = c.getContext('2d');
+
+  if (preprocess === 'contrast') {
+    // Boost contrast via CSS filter before drawing
+    ctx.filter = 'contrast(1.8) brightness(1.1)';
+  } else if (preprocess === 'grayscale') {
+    ctx.filter = 'grayscale(1) contrast(2)';
+  } else if (preprocess === 'sharpen') {
+    ctx.filter = 'contrast(2.2) brightness(0.95) saturate(0)';
+  }
+
   ctx.drawImage(img, 0, 0, targetW, targetH);
+  ctx.filter = 'none';
   const imageData = ctx.getImageData(0, 0, targetW, targetH);
   document.body.removeChild(c);
 
@@ -526,7 +594,7 @@ function tryDecode(img, targetW, targetH) {
   if (allZero) return null;
 
   // Try all inversion modes
-  const modes = ['dontInvert', 'onlyInvert', 'attemptBoth', 'invertFirst'];
+  const modes = ['attemptBoth', 'dontInvert', 'onlyInvert', 'invertFirst'];
   for (const mode of modes) {
     try {
       const r = jsQR(imageData.data, targetW, targetH, { inversionAttempts: mode });
@@ -541,20 +609,26 @@ function runDecode(img) {
   const nh = img.naturalHeight || img.height || 0;
   if (!nw || !nh) return null;
 
-  // Try at multiple scales — sometimes smaller helps jsQR
+  // Try at multiple scales and preprocessing modes
   const scales = [
-    [nw, nh],                                          // natural
-    scaleDown(nw, nh, 1200),                           // max 1200
-    scaleDown(nw, nh, 800),                            // max 800
-    scaleDown(nw, nh, 500),                            // max 500
+    [nw, nh],
+    scaleDown(nw, nh, 1600),
+    scaleDown(nw, nh, 1200),
+    scaleDown(nw, nh, 800),
+    scaleDown(nw, nh, 500),
+    scaleDown(nw, nh, 300),
   ].filter((s,i,arr) =>
     s[0] > 0 && s[1] > 0 &&
-    arr.findIndex(x => x[0]===s[0] && x[1]===s[1]) === i  // deduplicate
+    arr.findIndex(x => x[0]===s[0] && x[1]===s[1]) === i
   );
 
+  const preprocessModes = [null, 'contrast', 'grayscale', 'sharpen'];
+
   for (const [w, h] of scales) {
-    const result = tryDecode(img, w, h);
-    if (result) return result;
+    for (const pre of preprocessModes) {
+      const result = tryDecode(img, w, h, pre);
+      if (result) return result;
+    }
   }
   return null;
 }
@@ -652,10 +726,40 @@ decodeBtn.addEventListener('click', () => {
     const safe    = data.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     const display = isURL ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>` : safe;
 
+    // Build the open-action button based on content type
+    let openBtnHtml = '';
+    if (isURL) {
+      openBtnHtml = `<a class="btn btn-primary cam-open-btn" href="${safe}" target="_blank" rel="noopener noreferrer">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
+          <path d="M6 2H2a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1V8" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M8 1h5m0 0v5m0-5L6.5 7.5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Open Link
+      </a>`;
+    } else if (isEmail) {
+      const mailto = data.startsWith('mailto:') ? safe : `mailto:${safe}`;
+      openBtnHtml = `<a class="btn btn-primary cam-open-btn" href="${mailto}">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
+          <rect x="1" y="3" width="12" height="9" rx="1.5" stroke="white" stroke-width="1.6" fill="none"/>
+          <path d="M1 4l6 4 6-4" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Send Email
+      </a>`;
+    } else if (isPhone) {
+      const tel = data.startsWith('tel:') ? safe : `tel:${safe.replace(/\s/g,'')}`;
+      openBtnHtml = `<a class="btn btn-primary cam-open-btn" href="${tel}">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="flex-shrink:0">
+          <path d="M2 2.5C2 1.7 2.7 1 3.5 1h1.1c.4 0 .7.3.8.6l.7 2.1c.1.3 0 .7-.3.9L4.7 5.4c.7 1.5 1.9 2.7 3.4 3.4l.8-1.1c.2-.3.6-.4.9-.3l2.1.7c.3.1.6.4.6.8v1.1c0 .8-.7 1.5-1.5 1.5-5 0-9-4-9-9z" stroke="white" stroke-width="1.4" fill="none"/>
+        </svg>
+        Call Number
+      </a>`;
+    }
+
     camResultBox.innerHTML = `
       <div class="decoded-wrap">
         <div class="type-tag ${tagClass}">${tagLabel}</div>
         <div class="decoded-data cam-decoded">${display}</div>
+        ${openBtnHtml}
       </div>`;
 
     setStatus('QR code scanned!', 'success');
