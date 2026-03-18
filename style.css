@@ -55,7 +55,7 @@
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;-webkit-overflow-scrolling:touch}
 body{
   font-family:var(--font);
   background:var(--bg);
@@ -63,6 +63,14 @@ body{
   min-height:100vh;
   line-height:1.6;
   transition:background var(--t),color var(--t);
+  /* Prevent text selection on UI controls in WebView/APK */
+  -webkit-touch-callout:none;
+}
+/* Allow selection on content areas */
+.decoded-data,.result-box,.cam-decoded,
+input,textarea{
+  -webkit-user-select:text;
+  user-select:text;
 }
 
 /* ── NAVBAR ─────────────────────────────── */
@@ -766,6 +774,22 @@ input[type=color]{width:28px;height:24px;border:none;border-radius:4px;padding:0
   background:var(--primary);margin-top:.45rem;opacity:.7;
 }
 .about-uses-list strong{color:var(--text);font-weight:600}
+
+/* Open action button inside camera result */
+.cam-open-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  margin-top:.85rem;text-decoration:none;
+  padding:9px 20px;border-radius:var(--r-sm);
+  font-size:.86rem;font-weight:600;
+  background:var(--primary);color:#fff;
+  border:none;cursor:pointer;
+  transition:background var(--t),transform var(--t),box-shadow var(--t);
+}
+.cam-open-btn:hover{
+  background:var(--primary-d);
+  transform:translateY(-2px);
+  box-shadow:0 4px 14px rgba(37,99,235,.35);
+}
 
 /* ── TOAST ───────────────────────────────── */
 .toast-wrap{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:7px;z-index:9999}
